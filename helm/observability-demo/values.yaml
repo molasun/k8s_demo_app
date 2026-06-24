@@ -1,0 +1,147 @@
+# ============================================================
+# Observability Demo - Helm Values
+# ============================================================
+# 本 Chart 僅部署應用 + 可觀測性接入配置
+# 所有基礎設施組件（Prometheus/Loki/OTel等）已通過 Operator 部署
+# ============================================================
+
+# ── 全局設置 ────────────────────────────────────────────────
+global:
+  namespace: observability-demo
+  environment: development  # development | staging | production
+
+# ── 可觀測性接入配置 ────────────────────────────────────────
+observability:
+  # Prometheus 接入配置
+  prometheus:
+    enabled: true
+    # ServiceMonitor 的標籤，需要匹配已有 Prometheus CR 的 serviceMonitorSelector
+    serviceMonitorSelector:
+      release: prometheus
+    # PrometheusRule 的標籤，需要匹配已有 Prometheus CR 的 ruleSelector
+    ruleSelector:
+      release: prometheus
+    # 指標採集間隔
+    scrapeInterval: 15s
+
+  # OpenTelemetry 接入配置
+  opentelemetry:
+    enabled: true
+    # 已有 OTel Collector 的 OTLP HTTP 端點
+    collectorEndpoint: "http://otel-collector.openshift-opentelemetry.svc.cluster.local:4318"
+    # 是否使用 OpenTelemetry Operator 自動注入（推薦）
+    # 如果爲 false，應用將通過 SDK 直接發送到 collectorEndpoint
+    useAutoInstrumentation: true
+    # Instrumentation CR 名稱
+    instrumentationName: "observability-demo-instrumentation"
+    # 採樣率 (1.0 = 100%，演示環境推薦全採樣)
+    samplingRatio: "1.0"
+
+  # AlertManager 告警配置
+  alertmanager:
+    enabled: true
+    # 告警通知 Webhook（可選，用於接收告警通知）
+    # webhookUrl: "https://hooks.example.com/alert"
+
+  # Loki 日誌配置（應用側輸出 JSON 到 stdout，無需額外配置）
+  loki:
+    enabled: true
+    # 日誌級別
+    logLevel: "INFO"
+
+  # Network Observability（eBPF 自動採集，零配置）
+  networkObservability:
+    enabled: true
+
+# ── 後端配置 ────────────────────────────────────────────────
+backend:
+  enabled: true
+  name: backend
+  replicas: 2
+  image:
+    repository: quay.io/observability-demo/backend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 8000
+    metricsPort: 8000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  # 環境變量
+  env:
+    DATABASE_URL: "sqlite:///./todos.db"
+    ENVIRONMENT: "development"
+    LOG_LEVEL: "INFO"
+  # 健康檢查
+  healthCheck:
+    livenessPath: /api/health
+    readinessPath: /api/health
+    initialDelaySeconds: 10
+    periodSeconds: 15
+  # OpenShift Route
+  route:
+    enabled: true
+    host: ""  # 留空則自動生成
+    tls:
+      enabled: true
+      termination: edge
+
+# ── 前端配置 ────────────────────────────────────────────────
+frontend:
+  enabled: true
+  name: frontend
+  replicas: 2
+  image:
+    repository: quay.io/observability-demo/frontend
+    tag: latest
+    pullPolicy: IfNotPresent
+  service:
+    type: ClusterIP
+    port: 3000
+    metricsPort: 3000
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 500m
+      memory: 256Mi
+  # 環境變量
+  env:
+    BACKEND_URL: "http://backend:8000"
+    ENVIRONMENT: "development"
+    LOG_LEVEL: "INFO"
+    PORT: "3000"
+  # 健康檢查
+  healthCheck:
+    livenessPath: /health
+    readinessPath: /health
+    initialDelaySeconds: 10
+    periodSeconds: 15
+  # OpenShift Route
+  route:
+    enabled: true
+    host: ""  # 留空則自動生成
+    tls:
+      enabled: true
+      termination: edge
+
+# ── Grafana Dashboards ──────────────────────────────────────
+grafana:
+  dashboards:
+    enabled: true
+    # 如果 Grafana 通過 Grafana Operator 部署，設置此標籤以自動發現 Dashboard
+    dashboardLabelSelector:
+      grafana_dashboard: "1"
+
+# ── 安全上下文 ──────────────────────────────────────────────
+securityContext:
+  runAsNonRoot: true
+  runAsUser: 1001
+  fsGroup: 1001

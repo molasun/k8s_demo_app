@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Observability Demo - Todo Manager</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>📋 Todo Manager</h1>
+      <p class="subtitle">OpenShift Observability Demo Application</p>
+      <div class="header-actions">
+        <button id="seedDataBtn" class="btn btn-secondary" title="Generate sample data for observability testing">
+          🎲 Generate Test Data
+        </button>
+      </div>
+    </header>
+
+    <% if (typeof error !== 'undefined' && error) { %>
+    <div class="alert alert-error">
+      <strong>⚠️ Error:</strong> <%= error %>
+    </div>
+    <% } %>
+
+    <!-- 篩選欄 -->
+    <div class="filters">
+      <div class="filter-group">
+        <label>Status:</label>
+        <select id="filterStatus" class="filter-select">
+          <option value="">All</option>
+          <option value="pending" <%= filters.status === 'pending' ? 'selected' : '' %>>Pending</option>
+          <option value="in_progress" <%= filters.status === 'in_progress' ? 'selected' : '' %>>In Progress</option>
+          <option value="completed" <%= filters.status === 'completed' ? 'selected' : '' %>>Completed</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label>Priority:</label>
+        <select id="filterPriority" class="filter-select">
+          <option value="">All</option>
+          <option value="low" <%= filters.priority === 'low' ? 'selected' : '' %>>Low</option>
+          <option value="medium" <%= filters.priority === 'medium' ? 'selected' : '' %>>Medium</option>
+          <option value="high" <%= filters.priority === 'high' ? 'selected' : '' %>>High</option>
+        </select>
+      </div>
+      <div class="filter-group filter-search">
+        <label>Search:</label>
+        <input type="text" id="filterSearch" placeholder="Search title..." value="<%= filters.search || '' %>">
+      </div>
+      <button id="applyFilterBtn" class="btn btn-primary">Filter</button>
+      <button id="clearFilterBtn" class="btn btn-secondary">Clear</button>
+    </div>
+
+    <!-- 創建表單 -->
+    <div class="form-section">
+      <h2>Create New Todo</h2>
+      <form id="createTodoForm" class="todo-form">
+        <div class="form-row">
+          <div class="form-group flex-2">
+            <label for="todoTitle">Title *</label>
+            <input type="text" id="todoTitle" placeholder="Enter todo title" required maxlength="200">
+          </div>
+          <div class="form-group">
+            <label for="todoPriority">Priority</label>
+            <select id="todoPriority">
+              <option value="medium">Medium</option>
+              <option value="low">Low</option>
+              <option value="high">High</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group flex-1">
+            <label for="todoDescription">Description</label>
+            <textarea id="todoDescription" rows="2" placeholder="Optional description" maxlength="2000"></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">➕ Create Todo</button>
+      </form>
+    </div>
+
+    <!-- Todo 列表 -->
+    <div class="list-section">
+      <h2>
+        Todo List
+        <span class="count-badge"><%= todos.length %> items</span>
+      </h2>
+
+      <% if (todos.length === 0) { %>
+      <div class="empty-state">
+        <p>No todos found. Create your first todo above!</p>
+      </div>
+      <% } else { %>
+      <div class="todo-table-wrapper">
+        <table class="todo-table">
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Title</th>
+              <th>Description</th>
+              <th>Status</th>
+              <th>Priority</th>
+              <th>Created</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            <% todos.forEach(function(todo) { %>
+            <tr data-id="<%= todo.id %>" class="status-<%= todo.status %>">
+              <td><%= todo.id %></td>
+              <td class="todo-title"><%= todo.title %></td>
+              <td class="todo-desc"><%= (todo.description || '').substring(0, 80) %><%= (todo.description && todo.description.length > 80) ? '...' : '' %></td>
+              <td>
+                <span class="badge badge-<%= todo.status %>"><%= todo.status %></span>
+              </td>
+              <td>
+                <span class="badge badge-priority-<%= todo.priority %>"><%= todo.priority %></span>
+              </td>
+              <td class="todo-date"><%= new Date(todo.created_at).toLocaleString() %></td>
+              <td class="actions">
+                <button class="btn btn-sm btn-edit" onclick="editTodo(<%= todo.id %>)" title="Edit">✏️</button>
+                <button class="btn btn-sm btn-delete" onclick="deleteTodo(<%= todo.id %>)" title="Delete">🗑️</button>
+              </td>
+            </tr>
+            <% }); %>
+          </tbody>
+        </table>
+      </div>
+      <% } %>
+    </div>
+
+    <!-- 可觀測性信息 -->
+    <footer>
+      <div class="obs-info">
+        <span>🔍 Prometheus: <code>/metrics</code></span>
+        <span>📊 Grafana: <em>(via Operator)</em></span>
+        <span>🔎 Jaeger: <em>(via Operator)</em></span>
+        <span>📝 Loki: <em>(structured JSON logs)</em></span>
+        <span>🌐 Network Obs: <em>(eBPF auto)</em></span>
+      </div>
+    </footer>
+  </div>
+
+  <script src="/app.js"></script>
+</body>
+</html>

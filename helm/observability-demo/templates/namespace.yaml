@@ -1,0 +1,10 @@
+{{- if .Values.global.namespace }}
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: {{ include "observability-demo.namespace" . }}
+  labels:
+    {{- include "observability-demo.labels" . | nindent 4 }}
+    # Network Observability: 標記命名空間以便在 NetObserv 控制檯中篩選
+    app.kubernetes.io/part-of: observability-demo
+{{- end }}

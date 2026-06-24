@@ -1,0 +1,26 @@
+{{- if and .Values.backend.enabled .Values.backend.route.enabled }}
+apiVersion: route.openshift.io/v1
+kind: Route
+metadata:
+  name: {{ .Values.backend.name }}
+  namespace: {{ include "observability-demo.namespace" . }}
+  labels:
+    {{- include "observability-demo.labels" . | nindent 4 }}
+    {{- include "observability-demo.backendLabels" . | nindent 4 }}
+spec:
+  {{- if .Values.backend.route.host }}
+  host: {{ .Values.backend.route.host }}
+  {{- end }}
+  port:
+    targetPort: http
+  to:
+    kind: Service
+    name: {{ .Values.backend.name }}
+    weight: 100
+  {{- if .Values.backend.route.tls.enabled }}
+  tls:
+    termination: {{ .Values.backend.route.tls.termination }}
+    insecureEdgeTerminationPolicy: Redirect
+  {{- end }}
+  wildcardPolicy: None
+{{- end }}

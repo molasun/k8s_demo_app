@@ -1,0 +1,16 @@
+apiVersion: v2
+name: observability-demo
+description: A Helm chart for deploying the Observability Demo application with CRUD Todo app, featuring integration with existing OpenShift observability stack (Prometheus, AlertManager, Loki, OpenTelemetry, Network Observability)
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+keywords:
+  - observability
+  - opentelemetry
+  - prometheus
+  - loki
+  - openshift
+  - crud
+  - demo
+maintainers:
+  - name: observability-demo-team

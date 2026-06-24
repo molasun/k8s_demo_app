@@ -1,0 +1,26 @@
+{
+  "name": "observability-demo-frontend",
+  "version": "1.0.0",
+  "description": "Frontend for Observability Demo - Todo CRUD App",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "ejs": "^3.1.9",
+    "axios": "^1.6.5",
+    "winston": "^3.11.0",
+    "prom-client": "^15.1.0",
+    "@opentelemetry/api": "^1.7.0",
+    "@opentelemetry/sdk-node": "^0.48.0",
+    "@opentelemetry/auto-instrumentations-node": "^0.41.0",
+    "@opentelemetry/exporter-trace-otlp-http": "^0.48.0",
+    "@opentelemetry/resources": "^1.21.0",
+    "@opentelemetry/semantic-conventions": "^1.21.0",
+    "@opentelemetry/sdk-trace-node": "^1.21.0",
+    "@opentelemetry/instrumentation-http": "^0.48.0",
+    "@opentelemetry/instrumentation-express": "^0.35.0"
+  }
+}

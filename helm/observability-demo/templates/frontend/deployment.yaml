@@ -1,0 +1,87 @@
+{{- if .Values.frontend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.frontend.name }}
+  namespace: {{ include "observability-demo.namespace" . }}
+  labels:
+    {{- include "observability-demo.labels" . | nindent 4 }}
+    {{- include "observability-demo.frontendLabels" . | nindent 4 }}
+    app: observability-demo
+    # Network Observability 標籤
+    app.kubernetes.io/part-of: observability-demo
+spec:
+  replicas: {{ .Values.frontend.replicas }}
+  selector:
+    matchLabels:
+      {{- include "observability-demo.frontendLabels" . | nindent 6 }}
+      app: observability-demo
+  template:
+    metadata:
+      labels:
+        {{- include "observability-demo.labels" . | nindent 8 }}
+        {{- include "observability-demo.frontendLabels" . | nindent 8 }}
+        app: observability-demo
+      annotations:
+        # ── OpenTelemetry Operator 自動注入註解 ──
+        # 啓用 Node.js 自動埋點注入
+        {{- if .Values.observability.opentelemetry.enabled }}
+        {{- if .Values.observability.opentelemetry.useAutoInstrumentation }}
+        instrumentation.opentelemetry.io/inject-nodejs: "true"
+        {{- end }}
+        {{- end }}
+        # Prometheus 抓取註解（備選方案）
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "{{ .Values.frontend.service.port }}"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: default
+      securityContext:
+        runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+        runAsUser: {{ .Values.securityContext.runAsUser }}
+        fsGroup: {{ .Values.securityContext.fsGroup }}
+      containers:
+        - name: frontend
+          image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+          imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.frontend.service.port }}
+              protocol: TCP
+            - name: metrics
+              containerPort: {{ .Values.frontend.service.metricsPort }}
+              protocol: TCP
+          env:
+            - name: OTEL_SERVICE_NAME
+              value: "frontend"
+            - name: OTEL_EXPORTER_OTLP_ENDPOINT
+              value: {{ include "observability-demo.otelEndpoint" . | quote }}
+            - name: OTEL_RESOURCE_ATTRIBUTES
+              value: "service.namespace={{ include "observability-demo.namespace" . }},deployment.environment={{ .Values.global.environment }}"
+            - name: OTEL_TRACES_SAMPLER
+              value: "parentbased_traceidratio"
+            - name: OTEL_TRACES_SAMPLER_ARG
+              value: {{ .Values.observability.opentelemetry.samplingRatio | quote }}
+            - name: ENVIRONMENT
+              value: {{ .Values.global.environment | quote }}
+            - name: LOG_LEVEL
+              value: {{ .Values.observability.loki.logLevel | quote }}
+            {{- range $key, $value := .Values.frontend.env }}
+            - name: {{ $key }}
+              value: {{ $value | quote }}
+            {{- end }}
+          resources:
+            {{- toYaml .Values.frontend.resources | nindent 12 }}
+          livenessProbe:
+            httpGet:
+              path: {{ .Values.frontend.healthCheck.livenessPath }}
+              port: http
+            initialDelaySeconds: {{ .Values.frontend.healthCheck.initialDelaySeconds }}
+            periodSeconds: {{ .Values.frontend.healthCheck.periodSeconds }}
+          readinessProbe:
+            httpGet:
+              path: {{ .Values.frontend.healthCheck.readinessPath }}
+              port: http
+            initialDelaySeconds: {{ .Values.frontend.healthCheck.initialDelaySeconds }}
+            periodSeconds: {{ .Values.frontend.healthCheck.periodSeconds }}
+{{- end }}

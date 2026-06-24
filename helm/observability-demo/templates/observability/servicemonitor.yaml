@@ -1,0 +1,61 @@
+{{- if .Values.observability.prometheus.enabled }}
+{{- if .Values.backend.enabled }}
+---
+# ServiceMonitor - 讓 Prometheus Operator 自動發現並採集後端指標
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Values.backend.name }}
+  namespace: {{ include "observability-demo.namespace" . }}
+  labels:
+    {{- include "observability-demo.labels" . | nindent 4 }}
+    # 關鍵：此標籤必須匹配已有 Prometheus CR 的 serviceMonitorSelector
+    {{- range $key, $value := .Values.observability.prometheus.serviceMonitorSelector }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.observability.prometheus.scrapeInterval }}
+      path: /metrics
+      scheme: http
+      honorLabels: true
+  namespaceSelector:
+    matchNames:
+      - {{ include "observability-demo.namespace" . }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: backend
+      app: observability-demo
+{{- end }}
+
+{{- if .Values.frontend.enabled }}
+---
+# ServiceMonitor - 前端指標
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Values.frontend.name }}
+  namespace: {{ include "observability-demo.namespace" . }}
+  labels:
+    {{- include "observability-demo.labels" . | nindent 4 }}
+    # 關鍵：此標籤必須匹配已有 Prometheus CR 的 serviceMonitorSelector
+    {{- range $key, $value := .Values.observability.prometheus.serviceMonitorSelector }}
+    {{ $key }}: {{ $value | quote }}
+    {{- end }}
+spec:
+  endpoints:
+    - port: metrics
+      interval: {{ .Values.observability.prometheus.scrapeInterval }}
+      path: /metrics
+      scheme: http
+      honorLabels: true
+  namespaceSelector:
+    matchNames:
+      - {{ include "observability-demo.namespace" . }}
+  selector:
+    matchLabels:
+      app.kubernetes.io/component: frontend
+      app: observability-demo
+{{- end }}
+{{- end }}

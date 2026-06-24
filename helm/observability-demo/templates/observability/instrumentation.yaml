@@ -1,0 +1,57 @@
+{{- if .Values.observability.opentelemetry.enabled }}
+{{- if .Values.observability.opentelemetry.useAutoInstrumentation }}
+---
+# Instrumentation CR - OpenTelemetry Operator 自動注入配置
+# 定義如何自動注入 Python 和 Node.js 應用的 OTel SDK
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: {{ .Values.observability.opentelemetry.instrumentationName }}
+  namespace: {{ include "observability-demo.namespace" . }}
+  labels:
+    {{- include "observability-demo.labels" . | nindent 4 }}
+spec:
+  # OTLP 導出器配置
+  exporter:
+    endpoint: {{ include "observability-demo.otelEndpoint" . | quote }}
+  # Context 傳播器
+  propagators:
+    - tracecontext   # W3C Trace Context
+    - baggage        # W3C Baggage
+    - b3             # B3 (兼容 Zipkin)
+  # 採樣器
+  sampler:
+    type: parentbased_traceidratio
+    argument: {{ .Values.observability.opentelemetry.samplingRatio | quote }}
+  # 資源屬性
+  resource:
+    addK8sUIDAttributes: true
+  # Java 配置（預留）
+  java:
+    env:
+      - name: OTEL_SERVICE_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.labels['app.kubernetes.io/name']
+  # Node.js 配置
+  nodejs:
+    env:
+      - name: OTEL_SERVICE_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.labels['app.kubernetes.io/name']
+      - name: OTEL_NODEJS_ENABLED_INSTRUMENTATIONS
+        value: "http,express,net,dns"
+  # Python 配置
+  python:
+    env:
+      - name: OTEL_SERVICE_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.labels['app.kubernetes.io/name']
+      - name: OTEL_PYTHON_DISABLED_INSTRUMENTATIONS
+        value: ""  # 啓用所有自動埋點
+      - name: OTEL_PYTHON_LOG_CORRELATION
+        value: "true"  # 將 trace_id 注入日誌
+{{- end }}
+{{- end }}

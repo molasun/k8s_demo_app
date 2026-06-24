@@ -1,0 +1,170 @@
+# ============================================================
+# Docker Compose - 本地測試環境
+#
+# 兩種模式:
+#   快速模式: docker compose up
+#   完整模式: docker compose --profile full up
+#
+# 完整模式包含 OTel Collector + Jaeger，可驗證全鏈路追蹤
+# ============================================================
+
+version: "3.8"
+
+x-common-backend: &common-backend
+  build:
+    context: ./backend
+    dockerfile: Dockerfile
+  container_name: obs-demo-backend
+  ports:
+    - "8000:8000"
+
+x-common-frontend: &common-frontend
+  build:
+    context: ./frontend
+    dockerfile: Dockerfile
+  container_name: obs-demo-frontend
+  ports:
+    - "3000:3000"
+  depends_on:
+    backend:
+      condition: service_healthy
+
+services:
+  # ── 後端 — 默認快速模式（無 OTel）────────────────────────
+  backend:
+    <<: *common-backend
+    environment:
+      - DISABLE_OTEL=true
+      - OTEL_SERVICE_NAME=backend
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+      - DATABASE_URL=sqlite:///./todos.db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    restart: unless-stopped
+
+  # ── 前端 — 默認快速模式（無 OTel）────────────────────────
+  frontend:
+    <<: *common-frontend
+    environment:
+      - DISABLE_OTEL=true
+      - OTEL_SERVICE_NAME=frontend
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - ENVIRONMENT=development
+      - LOG_LEVEL=debug
+      - BACKEND_URL=http://backend:8000
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    restart: unless-stopped
+
+  # ══════════════════════════════════════════════════════════
+  # 以下服務僅完整模式生效: docker compose --profile full up
+  # ══════════════════════════════════════════════════════════
+
+  # ── OpenTelemetry Collector ──────────────────────────────
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.97.0
+    container_name: obs-demo-collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./config/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC
+      - "4318:4318"   # OTLP HTTP
+    depends_on:
+      - jaeger
+    profiles:
+      - full
+    restart: unless-stopped
+
+  # ── Jaeger (追蹤 UI) ────────────────────────────────────
+  jaeger:
+    image: jaegertracing/all-in-one:1.54
+    container_name: obs-demo-jaeger
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    ports:
+      - "16686:16686"  # Jaeger UI
+      - "4317"         # OTLP gRPC (內部用)
+    profiles:
+      - full
+    restart: unless-stopped
+
+  # ── 後端 (完整模式: OTel 開啓) ───────────────────────────
+  backend-full:
+    <<: *common-backend
+    container_name: obs-demo-backend
+    environment:
+      - DISABLE_OTEL=false
+      - OTEL_SERVICE_NAME=backend
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_TRACES_SAMPLER=parentbased_traceidratio
+      - OTEL_TRACES_SAMPLER_ARG=1.0
+      - ENVIRONMENT=development
+      - LOG_LEVEL=INFO
+      - DATABASE_URL=sqlite:///./todos.db
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/api/health')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    depends_on:
+      otel-collector:
+        condition: service_started
+    profiles:
+      - full
+    restart: unless-stopped
+
+  # ── 前端 (完整模式: OTel 開啓) ───────────────────────────
+  frontend-full:
+    <<: *common-frontend
+    container_name: obs-demo-frontend
+    environment:
+      - DISABLE_OTEL=false
+      - OTEL_SERVICE_NAME=frontend
+      - OTEL_EXPORTER_OTLP_ENDPOINT=http://otel-collector:4318
+      - OTEL_TRACES_SAMPLER=parentbased_traceidratio
+      - OTEL_TRACES_SAMPLER_ARG=1.0
+      - ENVIRONMENT=development
+      - LOG_LEVEL=debug
+      - BACKEND_URL=http://backend:8000
+      - PORT=3000
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => {process.exit(r.statusCode === 200 ? 0 : 1)})"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 15s
+    depends_on:
+      otel-collector:
+        condition: service_started
+      backend:
+        condition: service_healthy
+    profiles:
+      - full
+    restart: unless-stopped
+
+# ════════════════════════════════════════════════════════════
+# 使用方式:
+#
+#   # 快速模式 — 僅驗證 CRUD
+#   docker compose up --build
+#
+#   # 完整模式 — CRUD + 全鏈路追蹤 (Jaeger: http://localhost:16686)
+#   docker compose --profile full up --build
+#
+#   # 停止
+#   docker compose down                           # 快速模式
+#   docker compose --profile full down            # 完整模式
+# ════════════════════════════════════════════════════════════
