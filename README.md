@@ -59,6 +59,10 @@ observability-demo/
 │   │   └── app.js                       # 前端交互
 │   └── views/
 │       └── index.ejs                    # 頁面模板
+├── scripts/                             # 輔助腳本
+│   ├── test-local.sh                    # 本地測試（不依賴容器）
+│   ├── test-podman.sh                   # Podman 容器測試
+│   └── build-and-push-image.sh          # 構建並推送鏡像
 └── helm/                                # Helm Chart
     └── observability-demo/
         ├── Chart.yaml
@@ -87,13 +91,14 @@ observability-demo/
 | **完整模式** | CRUD + 指標 + 日誌 + 全鏈路追蹤 ✅ | ✅ `:16686` |
 
 ```bash
-# 使用 run.sh 腳本（推薦，無需 make）
-./run.sh test-docker          # 快速模式 — 僅驗證 CRUD 功能（默認）
-./run.sh test-docker-full     # 完整模式 — 含 OTel Collector + Jaeger
+# ── 方式一：本地直接運行（無需容器）──
+./scripts/test-local.sh all              # 同時啟動前後端
+./scripts/test-local.sh backend          # 只啟動後端
+./scripts/test-local.sh frontend         # 只啟動前端
 
-# 或直接使用 docker compose
-docker compose up --build
-docker compose --profile full up --build
+# ── 方式二：Podman 容器運行 ──
+./scripts/test-podman.sh quick           # 快速模式 — 僅驗證 CRUD（無 OTel）
+./scripts/test-podman.sh full            # 完整模式 — 含 OTel Collector + Jaeger
 # 訪問 http://localhost:3000 (前端) + http://localhost:16686 (Jaeger)
 ```
 
@@ -128,14 +133,17 @@ kubectl get lokistack -A
 #### 部署應用
 
 ```bash
-# 1. 構建鏡像
+# 1. 構建並推送鏡像（使用 Podman）
+./scripts/build-and-push-image.sh quay.io/yourorg latest
+
+# 或手動構建
 cd backend
-docker build -t quay.io/yourorg/observability-demo-backend:latest .
-docker push quay.io/yourorg/observability-demo-backend:latest
+podman build -t quay.io/yourorg/observability-demo-backend:latest .
+podman push quay.io/yourorg/observability-demo-backend:latest
 
 cd ../frontend
-docker build -t quay.io/yourorg/observability-demo-frontend:latest .
-docker push quay.io/yourorg/observability-demo-frontend:latest
+podman build -t quay.io/yourorg/observability-demo-frontend:latest .
+podman push quay.io/yourorg/observability-demo-frontend:latest
 
 # 2. 安裝 Helm Chart
 cd ../helm/observability-demo
@@ -299,8 +307,8 @@ observability:
 
 | 組件 | 技術 |
 |------|------|
-| 後端 | Python 3.11, FastAPI, SQLAlchemy, SQLite |
-| 前端 | Node.js 20, Express, EJS |
+| 後端 | Python 3.12, FastAPI, SQLAlchemy, SQLite |
+| 前端 | Node.js 24, Express, EJS |
 | 指標 | prometheus_client, prom-client, prometheus_fastapi_instrumentator |
 | 追蹤 | OpenTelemetry SDK (Python + Node.js) |
 | 日誌 | python-json-logger, winston (JSON → stdout) |
