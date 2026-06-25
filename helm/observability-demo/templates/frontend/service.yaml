@@ -15,10 +15,6 @@ spec:
       port: {{ .Values.frontend.service.port }}
       targetPort: http
       protocol: TCP
-    - name: metrics
-      port: {{ .Values.frontend.service.metricsPort }}
-      targetPort: metrics
-      protocol: TCP
   selector:
     {{- include "observability-demo.frontendLabels" . | nindent 4 }}
     app: observability-demo

@@ -1,6 +1,6 @@
 {{- if .Values.observability.alertmanager.enabled }}
 ---
-# PrometheusRule - 告警規則，由 Prometheus Operator 加載併發送到 AlertManager
+# PrometheusRule - 告警規則，由 Prometheus Operator 加載並發送到 AlertManager
 apiVersion: monitoring.coreos.com/v1
 kind: PrometheusRule
 metadata:
@@ -16,7 +16,7 @@ spec:
   groups:
     - name: observability-demo.rules
       rules:
-        # 1. 高錯誤率告警
+        # 1. 高錯誤率告警 (5xx > 5%)
         - alert: HighErrorRate
           expr: |
             (
@@ -30,7 +30,7 @@ spec:
             app: observability-demo
           annotations:
             summary: "High error rate detected"
-            description: "Error rate is {{ "{{" }} $value | humanizePercentage {{ "}}" }} over the last 5 minutes in the observability-demo application."
+            description: "5xx error rate exceeded 5% over the last 5 minutes in the observability-demo application."
 
         # 2. 高延遲告警 (P99 > 2s)
         - alert: HighLatency
@@ -42,7 +42,7 @@ spec:
             app: observability-demo
           annotations:
             summary: "High latency detected"
-            description: "P99 latency is {{ "{{" }} $value {{ "}}" }}s for handler {{ "{{" }} $labels.handler {{ "}}" }}. Threshold: 2s."
+            description: "P99 latency exceeded 2 seconds for observability-demo services."
 
         # 3. 服務不可達
         - alert: BackendServiceDown
@@ -65,7 +65,7 @@ spec:
             summary: "Frontend service is down"
             description: "The frontend service has been down for more than 2 minutes."
 
-        # 4. Pod 頻繁重啓
+        # 4. Pod 頻繁重啟
         - alert: PodRestartFrequent
           expr: |
             rate(kube_pod_container_status_restarts_total{
@@ -77,9 +77,9 @@ spec:
             app: observability-demo
           annotations:
             summary: "Pod restarting frequently"
-            description: "Pod {{ "{{" }} $labels.pod {{ "}}" }} has restarted {{ "{{" }} $value {{ "}}" }} times in the last 15 minutes."
+            description: "A pod in namespace {{ include "observability-demo.namespace" . }} is restarting more than 0.2 times per second over the last 15 minutes."
 
-        # 5. CPU 使用率過高
+        # 5. CPU 使用率過高 (> 80%)
         - alert: HighCPUUsage
           expr: |
             sum(rate(container_cpu_usage_seconds_total{
@@ -92,7 +92,7 @@ spec:
             app: observability-demo
           annotations:
             summary: "High CPU usage"
-            description: "Pod {{ "{{" }} $labels.pod {{ "}}" }} CPU usage is {{ "{{" }} $value | humanizePercentage {{ "}}" }} over the last 10 minutes."
+            description: "A pod in namespace {{ include "observability-demo.namespace" . }} has CPU usage above 80% for over 10 minutes."
 
         # 6. 請求速率異常下降
         - alert: RequestRateDrop
@@ -108,5 +108,5 @@ spec:
             app: observability-demo
           annotations:
             summary: "Request rate dropped significantly"
-            description: "Request rate dropped to {{ "{{" }} $value | humanizePercentage {{ "}}" }} of the rate 30 minutes ago."
+            description: "Current request rate dropped below 30% of the rate from 30 minutes ago."
 {{- end }}

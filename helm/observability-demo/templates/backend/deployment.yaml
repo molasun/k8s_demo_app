@@ -44,12 +44,16 @@ spec:
         - name: backend
           image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
           imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
           ports:
             - name: http
               containerPort: {{ .Values.backend.service.port }}
-              protocol: TCP
-            - name: metrics
-              containerPort: {{ .Values.backend.service.metricsPort }}
               protocol: TCP
           env:
             - name: OTEL_SERVICE_NAME

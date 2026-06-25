@@ -65,7 +65,6 @@ backend:
   service:
     type: ClusterIP
     port: 8000
-    metricsPort: 8000
   resources:
     requests:
       cpu: 100m
@@ -76,8 +75,6 @@ backend:
   # 環境變量
   env:
     DATABASE_URL: "sqlite:///./todos.db"
-    ENVIRONMENT: "development"
-    LOG_LEVEL: "INFO"
   # 健康檢查
   healthCheck:
     livenessPath: /api/health
@@ -104,7 +101,6 @@ frontend:
   service:
     type: ClusterIP
     port: 3000
-    metricsPort: 3000
   resources:
     requests:
       cpu: 100m
@@ -115,8 +111,6 @@ frontend:
   # 環境變量
   env:
     BACKEND_URL: "http://backend:8000"
-    ENVIRONMENT: "development"
-    LOG_LEVEL: "INFO"
     PORT: "3000"
   # 健康檢查
   healthCheck:

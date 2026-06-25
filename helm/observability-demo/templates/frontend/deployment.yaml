@@ -44,12 +44,16 @@ spec:
         - name: frontend
           image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
           imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+            seccompProfile:
+              type: RuntimeDefault
           ports:
             - name: http
               containerPort: {{ .Values.frontend.service.port }}
-              protocol: TCP
-            - name: metrics
-              containerPort: {{ .Values.frontend.service.metricsPort }}
               protocol: TCP
           env:
             - name: OTEL_SERVICE_NAME
