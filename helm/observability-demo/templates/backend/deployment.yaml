@@ -38,8 +38,12 @@ spec:
       serviceAccountName: default
       securityContext:
         runAsNonRoot: {{ .Values.securityContext.runAsNonRoot }}
+        {{- if .Values.securityContext.runAsUser }}
         runAsUser: {{ .Values.securityContext.runAsUser }}
+        {{- end }}
+        {{- if .Values.securityContext.fsGroup }}
         fsGroup: {{ .Values.securityContext.fsGroup }}
+        {{- end }}
       containers:
         - name: backend
           image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"

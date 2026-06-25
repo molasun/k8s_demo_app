@@ -137,5 +137,7 @@ grafana:
 # ── 安全上下文 ──────────────────────────────────────────────
 securityContext:
   runAsNonRoot: true
-  runAsUser: 1001
-  fsGroup: 1001
+  # OpenShift restricted-v2 SCC 不允許自定義 uid/gid
+  # runAsUser 和 fsGroup 留空，由 OpenShift 自動分配
+  # runAsUser: ~
+  # fsGroup: ~
