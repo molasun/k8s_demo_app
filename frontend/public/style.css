@@ -322,19 +322,14 @@ header .subtitle {
 
 .todo-title {
   font-weight: 500;
-  max-width: 220px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 300px;
 }
 
 .todo-desc {
   color: var(--gray-500);
-  max-width: 200px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  max-width: 350px;
   font-size: 13px;
+  line-height: 1.4;
 }
 
 .todo-date {
