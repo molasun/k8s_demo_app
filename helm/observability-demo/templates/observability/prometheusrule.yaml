@@ -30,7 +30,7 @@ spec:
             app: observability-demo
           annotations:
             summary: "High error rate detected"
-            description: "Error rate is {{ $value | humanizePercentage }} over the last 5 minutes in the observability-demo application."
+            description: "Error rate is {{ "{{" }} $value | humanizePercentage {{ "}}" }} over the last 5 minutes in the observability-demo application."
 
         # 2. 高延遲告警 (P99 > 2s)
         - alert: HighLatency
@@ -42,7 +42,7 @@ spec:
             app: observability-demo
           annotations:
             summary: "High latency detected"
-            description: "P99 latency is {{ $value }}s for handler {{ $labels.handler }}. Threshold: 2s."
+            description: "P99 latency is {{ "{{" }} $value {{ "}}" }}s for handler {{ "{{" }} $labels.handler {{ "}}" }}. Threshold: 2s."
 
         # 3. 服務不可達
         - alert: BackendServiceDown
@@ -77,7 +77,7 @@ spec:
             app: observability-demo
           annotations:
             summary: "Pod restarting frequently"
-            description: "Pod {{ $labels.pod }} has restarted {{ $value }} times in the last 15 minutes."
+            description: "Pod {{ "{{" }} $labels.pod {{ "}}" }} has restarted {{ "{{" }} $value {{ "}}" }} times in the last 15 minutes."
 
         # 5. CPU 使用率過高
         - alert: HighCPUUsage
@@ -92,7 +92,7 @@ spec:
             app: observability-demo
           annotations:
             summary: "High CPU usage"
-            description: "Pod {{ $labels.pod }} CPU usage is {{ $value | humanizePercentage }} over the last 10 minutes."
+            description: "Pod {{ "{{" }} $labels.pod {{ "}}" }} CPU usage is {{ "{{" }} $value | humanizePercentage {{ "}}" }} over the last 10 minutes."
 
         # 6. 請求速率異常下降
         - alert: RequestRateDrop
@@ -108,5 +108,5 @@ spec:
             app: observability-demo
           annotations:
             summary: "Request rate dropped significantly"
-            description: "Request rate dropped to {{ $value | humanizePercentage }} of the rate 30 minutes ago."
+            description: "Request rate dropped to {{ "{{" }} $value | humanizePercentage {{ "}}" }} of the rate 30 minutes ago."
 {{- end }}
