@@ -74,6 +74,11 @@ spec:
               value: {{ .Values.global.environment | quote }}
             - name: LOG_LEVEL
               value: {{ .Values.observability.loki.logLevel | quote }}
+            # 使用 auto-instrumentation 時，禁用應用側手動 SDK (Operator 已自動注入)
+            {{- if .Values.observability.opentelemetry.useAutoInstrumentation }}
+            - name: DISABLE_OTEL
+              value: "true"
+            {{- end }}
             {{- range $key, $value := .Values.frontend.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}

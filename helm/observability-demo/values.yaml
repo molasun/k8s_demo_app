@@ -74,7 +74,7 @@ backend:
       memory: 256Mi
   # 環境變量
   env:
-    DATABASE_URL: "sqlite:///./todos.db"
+    DATABASE_URL: "sqlite:////data/todos.db"
   # 健康檢查
   healthCheck:
     livenessPath: /api/health
