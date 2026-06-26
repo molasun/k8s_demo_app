@@ -8,7 +8,7 @@
 # ── 全局設置 ────────────────────────────────────────────────
 global:
   namespace: observability-demo
-  environment: development  # development | staging | production
+  environment: development # development | staging | production
 
 # ── 可觀測性接入配置 ────────────────────────────────────────
 observability:
@@ -57,10 +57,10 @@ observability:
 backend:
   enabled: true
   name: backend
-  replicas: 1  # SQLite 不支援多副本，共用數據需用 PostgreSQL
+  replicas: 1 # SQLite 不支援多副本，共用數據需用 PostgreSQL
   image:
     repository: quay.io/observability-demo/backend
-    tag: v1.0.1
+    tag: v1.0.2
     pullPolicy: Always
   service:
     type: ClusterIP
@@ -84,7 +84,7 @@ backend:
   # OpenShift Route
   route:
     enabled: true
-    host: ""  # 留空則自動生成
+    host: "" # 留空則自動生成
     tls:
       enabled: true
       termination: edge
@@ -96,7 +96,7 @@ frontend:
   replicas: 2
   image:
     repository: quay.io/observability-demo/frontend
-    tag: v1.0.1
+    tag: v1.0.2
     pullPolicy: Always
   service:
     type: ClusterIP
@@ -121,7 +121,7 @@ frontend:
   # OpenShift Route
   route:
     enabled: true
-    host: ""  # 留空則自動生成
+    host: "" # 留空則自動生成
     tls:
       enabled: true
       termination: edge
