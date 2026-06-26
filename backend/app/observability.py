@@ -145,6 +145,25 @@ def setup_opentelemetry():
 # 3. Prometheus 指標配置（接入已有 Prometheus）
 # ─────────────────────────────────────────────────────────────
 
+def setup_http_metrics():
+    """註冊 HTTP 請求級別指標（替代 prometheus_fastapi_instrumentator）"""
+    from prometheus_client import Counter, Histogram
+
+    return {
+        "http_requests_total": Counter(
+            "http_requests_total",
+            "Total HTTP requests",
+            ["method", "handler", "status"],
+        ),
+        "http_request_duration_seconds": Histogram(
+            "http_request_duration_seconds",
+            "HTTP request duration in seconds",
+            ["method", "handler"],
+            buckets=[0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1, 2.5, 5],
+        ),
+    }
+
+
 def setup_prometheus():
     """
     配置 Prometheus 指標採集。

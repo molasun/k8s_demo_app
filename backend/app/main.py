@@ -9,9 +9,10 @@ FastAPI 應用入口
 """
 import logging
 import os
+import time
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import init_db, engine, DATABASE_URL
@@ -19,6 +20,7 @@ from app.routes import router
 from app.observability import (
     setup_logging,
     setup_opentelemetry,
+    setup_http_metrics,
     setup_prometheus,
     update_todo_metrics,
 )
@@ -29,6 +31,9 @@ logger = setup_logging()
 # ── 初始化 OpenTelemetry ───────────────────────────────────
 tracer = setup_opentelemetry()
 logger.info("OpenTelemetry tracer initialized")
+
+# ── 初始化 HTTP 指標 ───────────────────────────────────────
+http_metrics = setup_http_metrics()
 
 
 @asynccontextmanager
@@ -85,6 +90,38 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+# ── HTTP 請求指標中間件 ───────────────────────────────────
+@app.middleware("http")
+async def prometheus_http_middleware(request: Request, call_next):
+    """記錄每個 HTTP 請求的指標"""
+    start = time.time()
+    response = None
+    try:
+        response = await call_next(request)
+        status = str(response.status_code)
+    except Exception:
+        status = "500"
+        raise
+    finally:
+        duration = time.time() - start
+        handler = request.scope.get("route")
+        handler_name = handler.name if handler else request.url.path
+
+        http_metrics["http_requests_total"].labels(
+            method=request.method,
+            handler=handler_name,
+            status=status,
+        ).inc()
+
+        http_metrics["http_request_duration_seconds"].labels(
+            method=request.method,
+            handler=handler_name,
+        ).observe(duration)
+
+    return response
+
 
 # 註冊路由
 app.include_router(router)

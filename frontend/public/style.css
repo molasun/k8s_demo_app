@@ -338,6 +338,27 @@ header .subtitle {
   white-space: nowrap;
 }
 
+/* Inline selects for quick status/priority editing */
+.inline-select {
+  padding: 4px 8px;
+  border: 1px solid var(--gray-300);
+  border-radius: 4px;
+  font-size: 12px;
+  font-weight: 600;
+  background: white;
+  cursor: pointer;
+  transition: border-color 0.15s;
+}
+.inline-select:hover {
+  border-color: var(--primary);
+}
+.status-select {
+  min-width: 110px;
+}
+.priority-select {
+  min-width: 85px;
+}
+
 .actions {
   white-space: nowrap;
   display: flex;

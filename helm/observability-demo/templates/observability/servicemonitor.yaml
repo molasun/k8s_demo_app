@@ -7,6 +7,9 @@ kind: ServiceMonitor
 metadata:
   name: {{ .Values.backend.name }}
   namespace: {{ include "observability-demo.namespace" . }}
+  annotations:
+    # 強制 helm upgrade 時重新部署（避免舊配置殘留）
+    helm.sh/resource-policy: keep
   labels:
     {{- include "observability-demo.labels" . | nindent 4 }}
     # OpenShift user-workload-monitoring 必要標籤
@@ -38,6 +41,9 @@ kind: ServiceMonitor
 metadata:
   name: {{ .Values.frontend.name }}
   namespace: {{ include "observability-demo.namespace" . }}
+  annotations:
+    # 強制 helm upgrade 時重新部署
+    helm.sh/resource-policy: keep
   labels:
     {{- include "observability-demo.labels" . | nindent 4 }}
     # OpenShift user-workload-monitoring 必要標籤

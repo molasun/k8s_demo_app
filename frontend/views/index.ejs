@@ -112,14 +112,22 @@
               <td class="todo-title"><%= todo.title %></td>
               <td class="todo-desc"><%= (todo.description || '').substring(0, 80) %><%= (todo.description && todo.description.length > 80) ? '...' : '' %></td>
               <td>
-                <span class="badge badge-<%= todo.status %>"><%= todo.status %></span>
+                <select class="inline-select status-select" data-id="<%= todo.id %>" onchange="quickUpdateTodo(<%= todo.id %>, 'status', this.value)">
+                  <option value="pending" <%= todo.status === 'pending' ? 'selected' : '' %>>Pending</option>
+                  <option value="in_progress" <%= todo.status === 'in_progress' ? 'selected' : '' %>>In Progress</option>
+                  <option value="completed" <%= todo.status === 'completed' ? 'selected' : '' %>>Completed</option>
+                </select>
               </td>
               <td>
-                <span class="badge badge-priority-<%= todo.priority %>"><%= todo.priority %></span>
+                <select class="inline-select priority-select" data-id="<%= todo.id %>" onchange="quickUpdateTodo(<%= todo.id %>, 'priority', this.value)">
+                  <option value="low" <%= todo.priority === 'low' ? 'selected' : '' %>>Low</option>
+                  <option value="medium" <%= todo.priority === 'medium' ? 'selected' : '' %>>Medium</option>
+                  <option value="high" <%= todo.priority === 'high' ? 'selected' : '' %>>High</option>
+                </select>
               </td>
               <td class="todo-date"><%= new Date(todo.created_at).toLocaleString() %></td>
               <td class="actions">
-                <button class="btn btn-sm btn-edit" onclick="editTodo(<%= todo.id %>)" title="Edit">✏️</button>
+                <button class="btn btn-sm btn-edit" onclick="editTodo(<%= todo.id %>)" title="Edit Title">✏️</button>
                 <button class="btn btn-sm btn-delete" onclick="deleteTodo(<%= todo.id %>)" title="Delete">🗑️</button>
               </td>
             </tr>

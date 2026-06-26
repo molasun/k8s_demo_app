@@ -122,52 +122,65 @@
     window.location.href = "/?" + params.toString();
   }
 
-  // ── 編輯 Todo ────────────────────────────────────────────
+  // ── 快速更新狀態/優先級（下拉框） ───────────────────
+  window.quickUpdateTodo = async function (id, field, value) {
+    try {
+      var updateData = {};
+      updateData[field] = value;
+
+      var response = await fetch("/api/todos/" + id, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        var errData = await response.json();
+        throw new Error(errData.detail || "Failed to update");
+      }
+
+      showToast(field + " updated to " + value, "success");
+      setTimeout(function () {
+        window.location.reload();
+      }, 400);
+    } catch (err) {
+      showToast(err.message, "error");
+      // 還原下拉框
+      setTimeout(function () {
+        window.location.reload();
+      }, 1000);
+    }
+  };
+
+  // ── 編輯 Todo（僅修改標題）────────────────────────────
   window.editTodo = async function (id) {
     try {
       var response = await fetch("/api/todos/" + id);
       if (!response.ok) throw new Error("Failed to fetch todo");
       var todo = await response.json();
 
-      // 使用 prompt 快速編輯（簡化交互）
       var newTitle = prompt("Edit Title:", todo.title);
-      if (newTitle === null) return; // 取消
+      if (newTitle === null) return;
       if (!newTitle.trim()) {
         showToast("Title cannot be empty", "error");
         return;
       }
 
-      var newStatus = prompt(
-        "Status (pending / in_progress / completed):",
-        todo.status
-      );
-      if (newStatus === null) return;
-
-      var newPriority = prompt("Priority (low / medium / high):", todo.priority);
-      if (newPriority === null) return;
-
-      var updateData = {
-        title: newTitle.trim(),
-        description: todo.description,
-        status: newStatus.trim(),
-        priority: newPriority.trim(),
-      };
-
       var updateResp = await fetch("/api/todos/" + id, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(updateData),
+        body: JSON.stringify({ title: newTitle.trim() }),
       });
 
       if (!updateResp.ok) {
         var errData = await updateResp.json();
-        throw new Error(errData.detail || "Failed to update todo");
+        throw new Error(errData.detail || "Failed to update title");
       }
 
-      showToast("Todo updated!", "success");
+      showToast("Title updated!", "success");
       setTimeout(function () {
         window.location.reload();
-      }, 500);
+      }, 400);
     } catch (err) {
       showToast(err.message, "error");
     }
