@@ -17,7 +17,7 @@ spec:
     - name: observability-demo.rules
       rules:
         - alert: BackendServiceDown
-          expr: up{job=~".*backend.*observability-demo.*"} == 0
+          expr: absent(up{job=~".*backend.*observability-demo.*"}) == 1
           for: 2m
           labels:
             severity: critical
@@ -27,7 +27,7 @@ spec:
             description: "The backend service has been down for more than 2 minutes."
 
         - alert: FrontendServiceDown
-          expr: up{job=~".*frontend.*observability-demo.*"} == 0
+          expr: absent(up{job=~".*frontend.*observability-demo.*"}) == 1
           for: 2m
           labels:
             severity: critical
