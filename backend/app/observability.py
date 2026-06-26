@@ -79,13 +79,9 @@ def setup_opentelemetry():
         return otel_trace.get_tracer(__name__)
 
     from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
     from opentelemetry.sdk.resources import Resource, SERVICE_NAME, SERVICE_NAMESPACE
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
-    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
-    from opentelemetry.instrumentation.requests import RequestsInstrumentor
-    from opentelemetry.instrumentation.logging import LoggingInstrumentor
 
     service_name = os.environ.get("OTEL_SERVICE_NAME", "backend")
     otel_endpoint = os.environ.get(
@@ -110,22 +106,6 @@ def setup_opentelemetry():
         tracer_provider = TracerProvider(resource=resource)
         tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
         otel_trace.set_tracer_provider(tracer_provider)
-
-    # 自動埋點
-    for name, instrumentor in [
-        ("FastAPI", FastAPIInstrumentor()),
-        ("SQLAlchemy", SQLAlchemyInstrumentor()),
-        ("Requests", RequestsInstrumentor()),
-    ]:
-        try:
-            instrumentor.instrument()
-        except Exception as e:
-            _logger.warning("%s instrumentation error: %s", name, e)
-
-    try:
-        LoggingInstrumentor().instrument(set_logging_format=True)
-    except Exception:
-        pass
 
     return otel_trace.get_tracer(__name__)
 
