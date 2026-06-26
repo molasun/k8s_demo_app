@@ -84,7 +84,7 @@
     <div class="list-section">
       <h2>
         Todo List
-        <span class="count-badge"><%= todos.length %> items</span>
+        <span class="count-badge"><%= pagination.totalCount %> items<% if (pagination.totalPages > 1) { %> (Page <%= pagination.page %>/<%= pagination.totalPages %>)<% } %></span>
       </h2>
 
       <% if (todos.length === 0) { %>
@@ -126,6 +126,37 @@
             <% }); %>
           </tbody>
         </table>
+      </div>
+      <% } %>
+
+      <!-- 分頁 -->
+      <% if (pagination.totalPages > 1) { %>
+      <div class="pagination">
+        <%
+          var filterParams = '';
+          if (filters.status) filterParams += '&status=' + filters.status;
+          if (filters.priority) filterParams += '&priority=' + filters.priority;
+          if (filters.search) filterParams += '&search=' + encodeURIComponent(filters.search);
+        %>
+        <% if (pagination.hasPrev) { %>
+        <a href="/?page=<%= pagination.page - 1 %><%= filterParams %>" class="pagination-btn">「 上一頁</a>
+        <% } else { %>
+        <span class="pagination-btn disabled">「 上一頁</span>
+        <% } %>
+
+        <% for (var p = 1; p <= pagination.totalPages; p++) { %>
+          <% if (p === pagination.page) { %>
+          <span class="pagination-btn active"><%= p %></span>
+          <% } else { %>
+          <a href="/?page=<%= p %><%= filterParams %>" class="pagination-btn"><%= p %></a>
+          <% } %>
+        <% } %>
+
+        <% if (pagination.hasNext) { %>
+        <a href="/?page=<%= pagination.page + 1 %><%= filterParams %>" class="pagination-btn">下一頁 」</a>
+        <% } else { %>
+        <span class="pagination-btn disabled">下一頁 」</span>
+        <% } %>
       </div>
       <% } %>
     </div>

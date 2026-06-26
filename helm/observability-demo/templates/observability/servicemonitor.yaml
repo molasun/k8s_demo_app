@@ -9,7 +9,8 @@ metadata:
   namespace: {{ include "observability-demo.namespace" . }}
   labels:
     {{- include "observability-demo.labels" . | nindent 4 }}
-    # 關鍵：此標籤必須匹配已有 Prometheus CR 的 serviceMonitorSelector
+    # OpenShift user-workload-monitoring 必要標籤
+    openshift.io/user-monitoring: "true"
     {{- range $key, $value := .Values.observability.prometheus.serviceMonitorSelector }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
@@ -39,7 +40,8 @@ metadata:
   namespace: {{ include "observability-demo.namespace" . }}
   labels:
     {{- include "observability-demo.labels" . | nindent 4 }}
-    # 關鍵：此標籤必須匹配已有 Prometheus CR 的 serviceMonitorSelector
+    # OpenShift user-workload-monitoring 必要標籤
+    openshift.io/user-monitoring: "true"
     {{- range $key, $value := .Values.observability.prometheus.serviceMonitorSelector }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}

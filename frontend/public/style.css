@@ -380,6 +380,52 @@ header .subtitle {
   color: #991b1b;
 }
 
+/* Pagination */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 20px;
+  flex-wrap: wrap;
+}
+
+.pagination-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 36px;
+  padding: 0 10px;
+  background: white;
+  border: 1px solid var(--gray-300);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--gray-700);
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.pagination-btn:hover {
+  background: var(--gray-100);
+  border-color: var(--primary);
+  color: var(--primary);
+}
+
+.pagination-btn.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: white;
+  font-weight: 600;
+}
+
+.pagination-btn.disabled {
+  color: var(--gray-300);
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* Footer */
 footer {
   padding: 16px 20px;

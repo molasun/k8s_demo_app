@@ -41,6 +41,18 @@ async def health_check():
     )
 
 
+@router.get("/todos/count")
+async def count_todos(
+    status: Optional[str] = Query(None),
+    priority: Optional[str] = Query(None),
+    search: Optional[str] = Query(None),
+    db: Session = Depends(get_db),
+):
+    """獲取 Todo 總數（用於分頁）"""
+    count = crud.get_todo_count(db, status=status, priority=priority, search=search)
+    return {"count": count}
+
+
 @router.get("/todos", response_model=list[schemas.TodoResponse])
 async def list_todos(
     status: Optional[str] = Query(None, description="按狀態篩選"),

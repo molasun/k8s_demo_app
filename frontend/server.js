@@ -21,6 +21,7 @@ setupOpenTelemetry();
 const app = express();
 const PORT = process.env.PORT || 3000;
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8000";
+const ITEMS_PER_PAGE = 10;
 
 // ── 初始化 Prometheus ────────────────────────────────────
 const promMetrics = setupPrometheus(app);
@@ -56,9 +57,12 @@ app.get("/", async (req, res) => {
   promMetrics.pageLoadsTotal.inc();
 
   try {
-    // 獲取查詢參數用於篩選
-    const { status, priority, search } = req.query;
-    const params = {};
+    // 獲取查詢參數用於篩選和分頁
+    const { status, priority, search, page } = req.query;
+    const currentPage = Math.max(1, parseInt(page) || 1);
+    const skip = (currentPage - 1) * ITEMS_PER_PAGE;
+
+    const params = { skip, limit: ITEMS_PER_PAGE };
     if (status) params.status = status;
     if (priority) params.priority = priority;
     if (search) params.search = search;
@@ -66,9 +70,25 @@ app.get("/", async (req, res) => {
     // 調用後端 API 獲取 Todo 列表
     const response = await makeBackendRequest("/api/todos", { params });
 
+    // 獲取總數
+    const countParams = {};
+    if (status) countParams.status = status;
+    if (priority) countParams.priority = priority;
+    if (search) countParams.search = search;
+    const countResponse = await makeBackendRequest("/api/todos/count", { params: countParams });
+    const totalCount = countResponse.data.count;
+    const totalPages = Math.ceil(totalCount / ITEMS_PER_PAGE);
+
     res.render("index", {
       todos: response.data,
       filters: { status, priority, search },
+      pagination: {
+        page: currentPage,
+        totalPages,
+        totalCount,
+        hasPrev: currentPage > 1,
+        hasNext: currentPage < totalPages,
+      },
       backendUrl: BACKEND_URL,
     });
   } catch (err) {
@@ -80,6 +100,7 @@ app.get("/", async (req, res) => {
     res.render("index", {
       todos: [],
       filters: {},
+      pagination: { page: 1, totalPages: 0, totalCount: 0, hasPrev: false, hasNext: false },
       backendUrl: BACKEND_URL,
       error: "Failed to connect to backend service",
     });

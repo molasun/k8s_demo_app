@@ -64,6 +64,25 @@ def get_todos(
         return results
 
 
+def get_todo_count(
+    db: Session,
+    status: str | None = None,
+    priority: str | None = None,
+    search: str | None = None,
+) -> int:
+    """獲取 Todo 總數（用於分頁）"""
+    query = db.query(models.TodoItem)
+
+    if status:
+        query = query.filter(models.TodoItem.status == status)
+    if priority:
+        query = query.filter(models.TodoItem.priority == priority)
+    if search:
+        query = query.filter(models.TodoItem.title.ilike(f"%{search}%"))
+
+    return query.count()
+
+
 def get_todo(db: Session, todo_id: int) -> models.TodoItem | None:
     """獲取單個 Todo"""
     with tracer.start_as_current_span("crud.get_todo") as span:
