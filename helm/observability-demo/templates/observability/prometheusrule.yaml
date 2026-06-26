@@ -7,6 +7,8 @@ metadata:
   namespace: {{ include "observability-demo.namespace" . }}
   labels:
     {{- include "observability-demo.labels" . | nindent 4 }}
+    # OpenShift user-workload-monitoring 必要標籤
+    openshift.io/user-monitoring: "true"
     {{- range $key, $value := .Values.observability.prometheus.ruleSelector }}
     {{ $key }}: {{ $value | quote }}
     {{- end }}
