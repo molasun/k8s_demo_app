@@ -29,11 +29,7 @@ observability:
     enabled: true
     # 已有 OTel Collector 的 OTLP HTTP 端點
     collectorEndpoint: "http://otel-collector.openshift-opentelemetry.svc.cluster.local:4318"
-    # 使用手動 SDK（應用代碼自行管理 OTel，避免與 Operator 自動注入衝突）
-    useAutoInstrumentation: false
-    # Instrumentation CR 名稱（useAutoInstrumentation=false 時不使用）
-    instrumentationName: "observability-demo-instrumentation"
-    # 採樣率 (1.0 = 100%，演示環境推薦全採樣)
+    # 採樣率 (1.0 = 100%)
     samplingRatio: "1.0"
 
   # AlertManager 告警配置
