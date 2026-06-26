@@ -60,8 +60,8 @@ backend:
   replicas: 2
   image:
     repository: quay.io/observability-demo/backend
-    tag: latest
-    pullPolicy: IfNotPresent
+    tag: v1.0.1
+    pullPolicy: Always
   service:
     type: ClusterIP
     port: 8000
@@ -96,8 +96,8 @@ frontend:
   replicas: 2
   image:
     repository: quay.io/observability-demo/frontend
-    tag: latest
-    pullPolicy: IfNotPresent
+    tag: v1.0.1
+    pullPolicy: Always
   service:
     type: ClusterIP
     port: 3000
