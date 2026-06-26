@@ -193,9 +193,7 @@ def setup_prometheus(app, instrumentator):
         ),
     }
 
-    # 使用 Instrumentator 自動暴露 HTTP 指標
-    instrumentator.instrument(app).expose(app, endpoint="/metrics", include_in_schema=True)
-
+    # instrument/instrumentator.expose() 已在 main.py 中調用
     return metrics
 
 

@@ -102,6 +102,9 @@ app.add_middleware(
 # 註冊路由
 app.include_router(router)
 
+# 註冊 Prometheus /metrics 端點（必須在 lifespan 之前）
+instrumentator.instrument(app).expose(app, endpoint="/metrics", include_in_schema=True)
+
 
 # ── 根路徑 ─────────────────────────────────────────────────
 @app.get("/")
