@@ -62,32 +62,30 @@ def setup_logging():
 
 def setup_opentelemetry():
     """
-    初始化 OpenTelemetry SDK。
+    初始化 OpenTelemetry SDK（手動模式）。
+    同時配置自動埋點（FastAPI/HTTP/日誌）和 OTLP 導出器。
 
-    支持以下模式：
-    1. OpenTelemetry Operator 自動注入（K8s 環境，DISABLE_OTEL=true）
-    2. 手動 SDK 初始化（本地測試 / Docker Compose，DISABLE_OTEL 不設置）
+    K8s 環境通過 OTEL_EXPORTER_OTLP_ENDPOINT 配置 Collector。
+    本地測試可設置 DISABLE_OTEL=true 跳過。
     """
     import logging
     _logger = logging.getLogger(__name__)
 
     from opentelemetry import trace as otel_trace
-    from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor
 
-    # 檢查是否已有 auto-instrumentation 的 TracerProvider
-    current_provider = otel_trace.get_tracer_provider()
-    is_auto_instrumented = isinstance(current_provider, TracerProvider)
-
-    if is_auto_instrumented:
-        # auto-instrumentation 已設置 TracerProvider，只需確保 span 會被導出
-        _logger.info("Using auto-instrumentation TracerProvider (Operator)")
+    # 支持通過環境變量禁用 OTel（本地快速測試用）
+    if os.environ.get("DISABLE_OTEL", "").lower() == "true":
+        _logger.info("OpenTelemetry disabled via DISABLE_OTEL=true")
         return otel_trace.get_tracer(__name__)
 
-    # 手動 SDK 模式
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
     from opentelemetry.sdk.resources import Resource, SERVICE_NAME, SERVICE_NAMESPACE
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
-    from opentelemetry.sdk.trace.export import ConsoleSpanExporter
+    from opentelemetry.instrumentation.fastapi import FastAPIInstrumentor
+    from opentelemetry.instrumentation.sqlalchemy import SQLAlchemyInstrumentor
+    from opentelemetry.instrumentation.requests import RequestsInstrumentor
+    from opentelemetry.instrumentation.logging import LoggingInstrumentor
 
     service_name = os.environ.get("OTEL_SERVICE_NAME", "backend")
     otel_endpoint = os.environ.get(
@@ -106,12 +104,28 @@ def setup_opentelemetry():
         exporter = OTLPSpanExporter(endpoint=f"{otel_endpoint}/v1/traces", timeout=5)
         tracer_provider.add_span_processor(BatchSpanProcessor(exporter))
         otel_trace.set_tracer_provider(tracer_provider)
-        _logger.info("Manual OTel SDK initialized -> %s", otel_endpoint)
+        _logger.info("OpenTelemetry SDK initialized -> %s", otel_endpoint)
     except Exception as e:
-        _logger.warning("Cannot connect to OTel Collector, using Console exporter: %s", e)
+        _logger.warning("OTel Collector unreachable, using Console exporter: %s", e)
         tracer_provider = TracerProvider(resource=resource)
         tracer_provider.add_span_processor(BatchSpanProcessor(ConsoleSpanExporter()))
         otel_trace.set_tracer_provider(tracer_provider)
+
+    # 自動埋點
+    for name, instrumentor in [
+        ("FastAPI", FastAPIInstrumentor()),
+        ("SQLAlchemy", SQLAlchemyInstrumentor()),
+        ("Requests", RequestsInstrumentor()),
+    ]:
+        try:
+            instrumentor.instrument()
+        except Exception as e:
+            _logger.warning("%s instrumentation error: %s", name, e)
+
+    try:
+        LoggingInstrumentor().instrument(set_logging_format=True)
+    except Exception:
+        pass
 
     return otel_trace.get_tracer(__name__)
 
