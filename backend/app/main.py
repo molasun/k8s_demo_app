@@ -13,7 +13,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from prometheus_fastapi_instrumentator import Instrumentator
 
 from app.database import init_db, engine, DATABASE_URL
 from app.routes import router
@@ -31,18 +30,6 @@ logger = setup_logging()
 tracer = setup_opentelemetry()
 logger.info("OpenTelemetry tracer initialized")
 
-# ── 初始化 Prometheus Instrumentator ───────────────────────
-instrumentator = Instrumentator(
-    should_group_status_codes=True,
-    should_ignore_untemplated=True,
-    should_respect_env_var=True,
-    should_instrument_requests_inprogress=True,
-    excluded_handlers=["/metrics", "/health"],
-    env_var_name="ENABLE_METRICS",
-    inprogress_name="http_requests_inprogress",
-    inprogress_labels=True,
-)
-
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -55,7 +42,7 @@ async def lifespan(app: FastAPI):
     logger.info("Database initialized")
 
     # 初始化 Prometheus 指標
-    app.state.metrics = setup_prometheus(app, instrumentator)
+    app.state.metrics = setup_prometheus()
     logger.info("Prometheus metrics initialized")
 
     # 初始更新一次業務指標
@@ -102,8 +89,14 @@ app.add_middleware(
 # 註冊路由
 app.include_router(router)
 
-# 註冊 Prometheus /metrics 端點（必須在 lifespan 之前）
-instrumentator.instrument(app).expose(app, endpoint="/metrics", include_in_schema=True)
+
+# ── /metrics 端點 ─────────────────────────────────────────
+@app.get("/metrics")
+async def metrics():
+    """顯示 Prometheus 指標"""
+    from prometheus_client import generate_latest, REGISTRY, CONTENT_TYPE_LATEST
+    from fastapi.responses import Response
+    return Response(content=generate_latest(REGISTRY), media_type=CONTENT_TYPE_LATEST)
 
 
 # ── 根路徑 ─────────────────────────────────────────────────

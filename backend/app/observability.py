@@ -145,12 +145,12 @@ def setup_opentelemetry():
 # 3. Prometheus 指標配置（接入已有 Prometheus）
 # ─────────────────────────────────────────────────────────────
 
-def setup_prometheus(app, instrumentator):
+def setup_prometheus():
     """
     配置 Prometheus 指標採集。
-    
-    通過 prometheus_fastapi_instrumentator 自動生成 HTTP 指標，
-    並註冊自定義業務指標。
+
+    註冊自定義業務指標，返回 metrics 字典。
+    /metrics 端點由 main.py 中的原生 prometheus_client 處理。
     """
     from prometheus_client import Counter, Gauge, Histogram, generate_latest, REGISTRY
 
