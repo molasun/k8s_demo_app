@@ -40,8 +40,9 @@ observability:
   # AlertManager 告警配置
   alertmanager:
     enabled: true
-    # 告警通知 Webhook（可選，用於接收告警通知）
-    # webhookUrl: "https://hooks.example.com/alert"
+    # Webhook 接收端（支援 Slack / Discord / webhook.site 等）
+    receiverName: "webhook-receiver"
+    webhookUrl: "https://webhook.site/your-unique-id-here"
 
   # Loki 日誌配置（應用側輸出 JSON 到 stdout，無需額外配置）
   loki:
@@ -57,7 +58,7 @@ observability:
 backend:
   enabled: true
   name: backend
-  replicas: 2
+  replicas: 1  # SQLite 不支援多副本，共用數據需用 PostgreSQL
   image:
     repository: quay.io/observability-demo/backend
     tag: v1.0.1

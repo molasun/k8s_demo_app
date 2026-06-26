@@ -1,0 +1,26 @@
+{{- if .Values.observability.alertmanager.enabled }}
+---
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: observability-demo-alerts
+  namespace: {{ include "observability-demo.namespace" . }}
+  labels:
+    {{- include "observability-demo.labels" . | nindent 4 }}
+    openshift.io/user-monitoring: "true"
+spec:
+  route:
+    groupBy: ['alertname']
+    groupWait: 10s
+    groupInterval: 30s
+    repeatInterval: 4h
+    receiver: {{ .Values.observability.alertmanager.receiverName | default "default-receiver" }}
+    matchers:
+      - name: app
+        value: observability-demo
+  receivers:
+    - name: {{ .Values.observability.alertmanager.receiverName | default "default-receiver" }}
+      webhookConfigs:
+        - url: {{ .Values.observability.alertmanager.webhookUrl | quote }}
+          sendResolved: true
+{{- end }}

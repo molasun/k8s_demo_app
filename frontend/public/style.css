@@ -122,6 +122,15 @@ header .subtitle {
   background: var(--gray-300);
 }
 
+.btn-link {
+  background: none;
+  color: var(--primary);
+  padding: 10px 16px;
+}
+.btn-link:hover {
+  background: var(--gray-100);
+}
+
 .btn-sm {
   padding: 4px 10px;
   font-size: 13px;
