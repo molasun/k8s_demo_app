@@ -79,7 +79,7 @@ def setup_opentelemetry():
         return otel_trace.get_tracer(__name__)
 
     from opentelemetry.sdk.trace import TracerProvider
-    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter, SimpleSpanProcessor
     from opentelemetry.sdk.resources import Resource, SERVICE_NAME, SERVICE_NAMESPACE
     from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter
 
@@ -99,8 +99,11 @@ def setup_opentelemetry():
         tracer_provider = TracerProvider(resource=resource)
         exporter = OTLPSpanExporter(endpoint=f"{otel_endpoint}/v1/traces", timeout=5)
         tracer_provider.add_span_processor(BatchSpanProcessor(exporter))
+        # 同時輸出到 Console 以利於調試
+        from opentelemetry.sdk.trace.export import SimpleSpanProcessor
+        tracer_provider.add_span_processor(SimpleSpanProcessor(ConsoleSpanExporter()))
         otel_trace.set_tracer_provider(tracer_provider)
-        _logger.info("OpenTelemetry SDK initialized -> %s", otel_endpoint)
+        _logger.info("OpenTelemetry SDK initialized -> %s (ConsoleSpanProcessor also active)", otel_endpoint)
     except Exception as e:
         _logger.warning("OTel Collector unreachable, using Console exporter: %s", e)
         tracer_provider = TracerProvider(resource=resource)
