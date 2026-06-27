@@ -29,6 +29,9 @@ observability:
     enabled: true
     # 已有 OTel Collector 的 OTLP HTTP 端點
     collectorEndpoint: "http://otel-collector.openshift-opentelemetry.svc.cluster.local:4318"
+    # 使用 Operator 自動注入（零代碼自動埋點）
+    useAutoInstrumentation: true
+    instrumentationName: "observability-demo-instrumentation"
     # 採樣率 (1.0 = 100%)
     samplingRatio: "1.0"
 

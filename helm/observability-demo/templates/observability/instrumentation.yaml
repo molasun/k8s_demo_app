@@ -1,0 +1,33 @@
+{{- if .Values.observability.opentelemetry.enabled }}
+{{- if .Values.observability.opentelemetry.useAutoInstrumentation }}
+---
+apiVersion: opentelemetry.io/v1alpha1
+kind: Instrumentation
+metadata:
+  name: {{ .Values.observability.opentelemetry.instrumentationName }}
+  namespace: {{ include "observability-demo.namespace" . }}
+  labels:
+    {{- include "observability-demo.labels" . | nindent 4 }}
+spec:
+  exporter:
+    endpoint: {{ include "observability-demo.otelEndpoint" . | quote }}
+  propagators:
+    - tracecontext
+    - baggage
+  sampler:
+    type: parentbased_traceidratio
+    argument: {{ .Values.observability.opentelemetry.samplingRatio | quote }}
+  python:
+    env:
+      - name: OTEL_SERVICE_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.labels['app.kubernetes.io/name']
+  nodejs:
+    env:
+      - name: OTEL_SERVICE_NAME
+        valueFrom:
+          fieldRef:
+            fieldPath: metadata.labels['app.kubernetes.io/name']
+{{- end }}
+{{- end }}

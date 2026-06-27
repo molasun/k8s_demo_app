@@ -23,6 +23,10 @@ spec:
         {{- include "observability-demo.frontendLabels" . | nindent 8 }}
         app: observability-demo
       annotations:
+        # OpenTelemetry Operator 自動注入（Node.js）
+        {{- if .Values.observability.opentelemetry.useAutoInstrumentation }}
+        instrumentation.opentelemetry.io/inject-nodejs: "true"
+        {{- end }}
         # Prometheus 抓取註解（備選方案）
         prometheus.io/scrape: "true"
         prometheus.io/port: "{{ .Values.frontend.service.port }}"
@@ -67,6 +71,11 @@ spec:
               value: {{ .Values.global.environment | quote }}
             - name: LOG_LEVEL
               value: {{ .Values.observability.loki.logLevel | quote }}
+            # 使用 auto-instrumentation 時，禁用前端手動 SDK
+            {{- if .Values.observability.opentelemetry.useAutoInstrumentation }}
+            - name: DISABLE_OTEL
+              value: "true"
+            {{- end }}
             {{- range $key, $value := .Values.frontend.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}

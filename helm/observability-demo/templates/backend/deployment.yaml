@@ -23,6 +23,10 @@ spec:
         {{- include "observability-demo.backendLabels" . | nindent 8 }}
         app: observability-demo
       annotations:
+        # OpenTelemetry Operator 自動注入（Python）
+        {{- if .Values.observability.opentelemetry.useAutoInstrumentation }}
+        instrumentation.opentelemetry.io/inject-python: "true"
+        {{- end }}
         # Prometheus 抓取註解（備選方案，配合 ServiceMonitor）
         prometheus.io/scrape: "true"
         prometheus.io/port: "{{ .Values.backend.service.port }}"
@@ -73,6 +77,11 @@ spec:
               value: {{ .Values.global.environment | quote }}
             - name: LOG_LEVEL
               value: {{ .Values.observability.loki.logLevel | quote }}
+            # 使用 auto-instrumentation 時，禁用應用側手動 SDK
+            {{- if .Values.observability.opentelemetry.useAutoInstrumentation }}
+            - name: DISABLE_OTEL
+              value: "true"
+            {{- end }}
             {{- range $key, $value := .Values.backend.env }}
             - name: {{ $key }}
               value: {{ $value | quote }}
