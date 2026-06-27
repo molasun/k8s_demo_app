@@ -81,8 +81,7 @@ def setup_opentelemetry():
     from opentelemetry.sdk.trace import TracerProvider
     from opentelemetry.sdk.trace.export import BatchSpanProcessor, ConsoleSpanExporter
     from opentelemetry.sdk.resources import Resource, SERVICE_NAME, SERVICE_NAMESPACE
-    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter as GRPCSpanExporter
-    from opentelemetry.exporter.otlp.proto.http.trace_exporter import OTLPSpanExporter as HTTPSpanExporter
+    from opentelemetry.exporter.otlp.proto.grpc.trace_exporter import OTLPSpanExporter
 
     service_name = os.environ.get("OTEL_SERVICE_NAME", "backend")
     otel_endpoint = os.environ.get(
@@ -98,17 +97,12 @@ def setup_opentelemetry():
 
     try:
         tracer_provider = TracerProvider(resource=resource)
-        # gRPC 優先（端口 4317），失敗則用 HTTP（端口 4318）
-        grpc_endpoint = otel_endpoint.replace(":4318", ":4317")
-        try:
-            exporter = GRPCSpanExporter(endpoint=grpc_endpoint, timeout=5)
-            _logger.info("Using gRPC exporter -> %s", grpc_endpoint)
-        except Exception:
-            exporter = HTTPSpanExporter(endpoint=otel_endpoint, timeout=5)
-            _logger.info("gRPC unavailable, using HTTP -> %s", otel_endpoint)
+        # gRPC exporter 需要 host:port，不含 http:// 前綴
+        grpc_endpoint = otel_endpoint.replace("http://", "").replace(":4318", ":4317")
+        exporter = OTLPSpanExporter(endpoint=grpc_endpoint, timeout=5)
         tracer_provider.add_span_processor(BatchSpanProcessor(exporter))
         otel_trace.set_tracer_provider(tracer_provider)
-        _logger.info("OpenTelemetry SDK initialized")
+        _logger.info("OpenTelemetry SDK initialized -> %s", grpc_endpoint)
     except Exception as e:
         _logger.warning("OTel Collector unreachable, using Console exporter: %s", e)
         tracer_provider = TracerProvider(resource=resource)
