@@ -1,0 +1,71 @@
+# ============================================================
+# Network Observability 基礎設施 — FlowCollector + LokiStack
+# 用途：基於 eBPF 的網絡流量可觀測性，無需應用端修改
+# ============================================================
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: loki-s3-netobserv
+  namespace: netobserv
+type: Opaque
+stringData:
+  endpoint: "<YOUR_S3_ENDPOINT>"
+  access_key_id: "<YOUR_ACCESS_KEY>"
+  access_key_secret: "<YOUR_SECRET_KEY>"
+  bucketnames: <YOUR_BUCKET_NAME>
+  region: <YOUR_REGION>
+
+---
+apiVersion: loki.grafana.com/v1
+kind: LokiStack
+metadata:
+  name: loki
+  namespace: netobserv
+spec:
+  size: 1x.demo
+  storage:
+    schemas:
+      - version: v13
+        effectiveDate: '2024-10-15'
+    secret:
+      name: loki-s3-netobserv
+      type: s3
+  storageClassName: gp3-csi
+  tenants:
+    mode: openshift-network
+
+---
+apiVersion: flows.netobserv.io/v1beta2
+kind: FlowCollector
+metadata:
+  name: cluster
+spec:
+  networkPolicy:
+    enable: true
+  loki:
+    enable: true
+    mode: LokiStack
+    lokiStack:
+      name: loki
+      namespace: netobserv
+    writeBatchWait: 1s
+    writeBatchSize: 10485760
+  deploymentModel: Service
+  agent:
+    ebpf:
+      sampling: 50
+      cacheMaxFlows: 120000
+      privileged: true
+      features:
+        - PacketDrop
+        - DNSTracking
+        - FlowRTT
+        - NetworkEvents
+    type: eBPF
+  consolePlugin:
+    enable: true
+    portNaming:
+      enable: true
+  namespace: netobserv

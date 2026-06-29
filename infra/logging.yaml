@@ -1,0 +1,85 @@
+# ============================================================
+# Logging 基礎設施 — LokiStack + ClusterLogForwarder + UIPlugin
+# 用途：收集 cluster 中 application / infrastructure / audit 日誌
+# ============================================================
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: logging-loki-s3
+  namespace: openshift-logging
+type: Opaque
+stringData:
+  endpoint: "<YOUR_S3_ENDPOINT>"
+  access_key_id: "<YOUR_ACCESS_KEY>"
+  access_key_secret: "<YOUR_SECRET_KEY>"
+  bucketnames: <YOUR_BUCKET_NAME>
+  region: <YOUR_REGION>
+
+---
+apiVersion: loki.grafana.com/v1
+kind: LokiStack
+metadata:
+  name: logging-loki
+  namespace: openshift-logging
+spec:
+  managementState: Managed
+  size: 1x.extra-small
+  storage:
+    schemas:
+      - effectiveDate: '2023-10-15'
+        version: v13
+    secret:
+      name: logging-loki-s3
+      type: s3
+  storageClassName: gp3-csi
+  tenants:
+    mode: openshift-logging
+
+---
+apiVersion: observability.openshift.io/v1
+kind: ClusterLogForwarder
+metadata:
+  name: instance
+  namespace: openshift-logging
+spec:
+  managementState: Managed
+  serviceAccount:
+    name: collector
+  outputs:
+    - name: internal-lokistack
+      type: lokiStack
+      lokiStack:
+        target:
+          name: logging-loki
+          namespace: openshift-logging
+        authentication:
+          token:
+            from: serviceAccount
+      tls:
+        ca:
+          configMapName: logging-loki-gateway-ca-bundle
+          key: service-ca.crt
+  pipelines:
+    - name: to-lokistack
+      inputRefs:
+        - application
+        - infrastructure
+        - audit
+      outputRefs:
+        - internal-lokistack
+
+---
+apiVersion: observability.openshift.io/v1alpha1
+kind: UIPlugin
+metadata:
+  name: logging
+spec:
+  type: Logging
+  logging:
+    lokiStack:
+      name: logging-loki
+    logsLimit: 50
+    timeout: 30s
+    schema: otel

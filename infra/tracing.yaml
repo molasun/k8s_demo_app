@@ -1,0 +1,110 @@
+# ============================================================
+# OpenTelemetry / Tracing 基礎設施 — TempoStack + Collector
+# 用途：接收 OTLP 協定的追蹤數據，存儲至 S3，並通過 OCP Console UI 展示
+# ============================================================
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: tempo-s3
+  namespace: tracing-system
+type: Opaque
+stringData:
+  endpoint: "<YOUR_S3_ENDPOINT>"
+  access_key_id: "<YOUR_ACCESS_KEY>"
+  access_key_secret: "<YOUR_SECRET_KEY>"
+  bucket: <YOUR_BUCKET_NAME>
+
+---
+apiVersion: tempo.grafana.com/v1alpha1
+kind: TempoStack
+metadata:
+  name: tempo-sample
+  namespace: tracing-system
+spec:
+  networkPolicy:
+    enabled: false
+  observability:
+    tracing:
+      jaeger_agent_endpoint: 'localhost:6831'
+  resources:
+    total:
+      limits:
+        cpu: 2000m
+        memory: 2Gi
+  tenants:
+    mode: openshift
+    authentication:
+      - tenantName: dev
+        tenantId: "tenant-dev"
+  managementState: Managed
+  template:
+    gateway:
+      enabled: true
+    queryFrontend:
+      jaegerQuery:
+        enabled: true
+  storage:
+    secret:
+      name: tempo-s3
+      type: s3
+  storageSize: 1Gi
+  retention:
+    global:
+      traces: 48h
+
+---
+apiVersion: opentelemetry.io/v1beta1
+kind: OpenTelemetryCollector
+metadata:
+  name: cluster-collector
+  namespace: tracing-system
+spec:
+  networkPolicy:
+    enabled: false
+  mode: deployment
+  serviceAccount: otel-collector
+  config:
+    extensions:
+      bearertokenauth:
+        filename: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    receivers:
+      otlp:
+        protocols:
+          grpc: {}
+          http: {}
+    processors:
+      batch:
+        timeout: 1s
+        send_batch_size: 1024
+      memory_limiter:
+        check_interval: 1s
+        limit_percentage: 75
+        spike_limit_percentage: 15
+    exporters:
+      otlp:
+        endpoint: tempo-tempo-sample-gateway.tracing-system.svc.cluster.local:8090
+        tls:
+          insecure: false
+          ca_file: "/var/run/secrets/kubernetes.io/serviceaccount/service-ca.crt"
+        auth:
+          authenticator: bearertokenauth
+        headers:
+          X-Scope-OrgID: "dev"
+    service:
+      extensions: [bearertokenauth]
+      pipelines:
+        traces:
+          receivers: [otlp]
+          processors: [memory_limiter, batch]
+          exporters: [otlp]
+
+---
+apiVersion: observability.openshift.io/v1alpha1
+kind: UIPlugin
+metadata:
+  name: distributed-tracing
+spec:
+  type: DistributedTracing
+
