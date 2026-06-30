@@ -4,7 +4,7 @@
 
 ## 架構概覽
 
-![alt text](<observability architecture.png>)
+![Architecture](<image/observability architecture.png>)
 
 ## 五大可觀測性支柱
 
