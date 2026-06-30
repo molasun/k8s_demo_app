@@ -4,23 +4,7 @@
 
 ## 架構概覽
 
-```
-┌──────────────────┐     HTTP      ┌──────────────────┐
-│  Frontend (Node) │──────────────▶│  Backend (Python) │
-│  Express + EJS   │               │  FastAPI + SQLite │
-│  Port: 3000      │               │  Port: 8000       │
-└────────┬─────────┘               └────────┬──────────┘
-         │                                  │
-         │      OTLP (gRPC/HTTP)            │
-         ▼                                  ▼
-┌──────────────────────────────────────────────────────┐
-│              已有基礎設施 (Operator 部署)               │
-│                                                      │
-│  Prometheus ← ServiceMonitor    AlertManager ← PrometheusRule
-│  Loki       ← stdout JSON        Tempo      ← OTLP
-│  Network Observability ← eBPF (零侵入)               │
-└──────────────────────────────────────────────────────┘
-```
+![alt text](<observability architecture.png>)
 
 ## 五大可觀測性支柱
 
